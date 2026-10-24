@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#D6141E">
+<meta name="description" content="Gerador de cartazes de oferta com lista de produtos, modelos e impressão em folhas A4.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+<title>Gerador de Cartazes</title>
+</head>
+<body>
+<header class="topo">
+  <h1>Gerador de Cartazes</h1>
+</header>
+
+<main class="conteudo">
+
+  <section class="bloco">
+    <h2>1. Produtos</h2>
+    <form id="form-produto" class="linha-form" autocomplete="off">
+      <label>Nome do produto *
+        <input id="nome" type="text" maxlength="80" placeholder="Ex.: Batata lavada">
+      </label>
+      <label>Preço (ex.: 24,90 ou 6,50 KG) *
+        <input id="preco" type="text" maxlength="30" placeholder="Ex.: 6,50 KG">
+      </label>
+      <button type="submit" class="botao verde">Adicionar</button>
+    </form>
+    <p class="ajuda">Preencha nome e preço e toque em Adicionar.</p>
+    <ul id="lista" class="lista"></ul>
+    <button id="limpar" type="button" class="botao cinza pequeno">Limpar lista</button>
+  </section>
+
+  <section class="bloco">
+    <h2>2. Cartaz</h2>
+    <label>Título
+      <input id="titulo" type="text" maxlength="40" value="OFERTA">
+    </label>
+    <div class="duas-colunas">
+      <label>Modelo
+        <select id="tema"></select>
+      </label>
+      <label>Tamanho
+        <select id="tamanho"></select>
+      </label>
+    </div>
+    <div class="duas-colunas">
+      <label>Orientação das folhas
+        <select id="orient">
+          <option value="0">Automático</option>
+          <option value="1">Retrato</option>
+          <option value="2">Paisagem</option>
+        </select>
+      </label>
+      <label class="marcar">
+        <input id="dividir" type="checkbox" checked>
+        Dividir em folhas A4 para colar
+      </label>
+    </div>
+    <p id="info" class="ajuda"></p>
+  </section>
+
+  <section class="bloco">
+    <h2>3. Modelo de imagem (opcional)</h2>
+    <p class="ajuda">Escolha uma imagem de modelo (PNG, JPG ou WebP). Ela vira o fundo do cartaz e o nome e o preço são colocados sobre ela.</p>
+    <div class="linha-botoes">
+      <label class="botao azul arquivo">Escolher imagem
+        <input id="arquivo" type="file" accept="image/*">
+      </label>
+      <button id="remover-modelo" type="button" class="botao cinza pequeno">Remover</button>
+    </div>
+    <p id="nome-modelo" class="ajuda">Nenhum modelo escolhido.</p>
+
+    <div id="textos-modelo" class="textos-modelo" hidden>
+      <p class="ajuda">Posição em % do modelo: X e Y são onde o texto começa; largura e altura são o tamanho da área.</p>
+      <div class="grade-textos">
+        <span></span><span>X %</span><span>Y %</span><span>Largura %</span><span>Altura %</span>
+        <span>Nome</span>
+        <input id="nomeX" type="number" min="0" max="100" value="15">
+        <input id="nomeY" type="number" min="0" max="100" value="30">
+        <input id="nomeW" type="number" min="0" max="100" value="70">
+        <input id="nomeH" type="number" min="0" max="100" value="18">
+        <span>Preço</span>
+        <input id="precoX" type="number" min="0" max="100" value="20">
+        <input id="precoY" type="number" min="0" max="100" value="58">
+        <input id="precoW" type="number" min="0" max="100" value="60">
+        <input id="precoH" type="number" min="0" max="100" value="22">
+      </div>
+    </div>
+  </section>
+
+  <section class="bloco">
+    <h2>Visualização</h2>
+    <div id="visualizacao" class="visualizacao">
+      <p class="ajuda">Adicione produtos para ver o cartaz.</p>
+    </div>
+    <div class="linha-botoes">
+      <button id="baixar" type="button" class="botao cinza">Baixar PNG</button>
+      <button id="imprimir" type="button" class="botao vermelho">Imprimir</button>
+    </div>
+    <p id="status" class="status" role="status"></p>
+  </section>
+
+</main>
+
+<div id="impressao" aria-hidden="true"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

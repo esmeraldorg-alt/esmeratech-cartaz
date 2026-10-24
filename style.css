@@ -1,0 +1,229 @@
+:root {
+  --vermelho: #d6141e;
+  --verde: #006e32;
+  --azul: #003399;
+  --cinza: #5a5f6a;
+  --fundo: #f5f6f8;
+  --texto: #1d2026;
+  --borda: #c9ccd3;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--fundo);
+  color: var(--texto);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 16px;
+}
+
+.topo {
+  background: var(--vermelho);
+  color: #fff;
+  padding: 14px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.topo h1 { margin: 0; font-size: 20px; }
+
+.conteudo {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 12px 16px 40px;
+}
+
+.bloco {
+  background: #fff;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.bloco h2 {
+  font-size: 17px;
+  margin: 0 0 10px;
+  color: var(--vermelho);
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+input[type="text"],
+input[type="number"],
+select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--texto);
+}
+input[type="number"] { width: 100%; }
+
+.marcar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 26px;
+}
+.marcar input { width: 22px; height: 22px; }
+
+.duas-colunas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.linha-form {
+  display: grid;
+  gap: 10px;
+}
+
+.botao {
+  display: inline-block;
+  border: 0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 16px;
+  color: #fff;
+  background: var(--cinza);
+  cursor: pointer;
+  text-align: center;
+}
+.botao.verde { background: var(--verde); }
+.botao.vermelho { background: var(--vermelho); }
+.botao.azul { background: var(--azul); }
+.botao.cinza { background: var(--cinza); }
+.botao.pequeno { padding: 8px 12px; font-size: 14px; }
+.botao:disabled { opacity: 0.5; }
+
+.linha-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+}
+.linha-botoes .botao { flex: 1 1 150px; }
+
+.arquivo {
+  position: relative;
+  overflow: hidden;
+}
+.arquivo input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.ajuda {
+  font-size: 13px;
+  color: var(--cinza);
+  margin: 6px 0;
+}
+
+.lista {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+}
+.lista li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-bottom: 1px solid #eceef2;
+  font-size: 15px;
+}
+.lista li:last-child { border-bottom: 0; }
+.lista .nome-item { overflow-wrap: anywhere; }
+.lista .remover {
+  border: 0;
+  background: #eceef2;
+  color: var(--vermelho);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.lista:empty::before {
+  content: "Nenhum produto cadastrado.";
+  display: block;
+  padding: 12px;
+  color: var(--cinza);
+  font-size: 14px;
+}
+
+.textos-modelo[hidden] { display: none; }
+.grade-textos {
+  display: grid;
+  grid-template-columns: 62px repeat(4, 1fr);
+  gap: 6px;
+  align-items: center;
+  font-size: 13px;
+  margin-top: 8px;
+}
+.grade-textos input { margin-top: 0; padding: 8px; }
+
+.visualizacao {
+  background: #4a4e57;
+  border-radius: 8px;
+  padding: 10px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+.visualizacao canvas {
+  max-width: 100%;
+  height: auto;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.visualizacao .ajuda { color: #e4e6ea; }
+
+.status {
+  min-height: 22px;
+  font-size: 14px;
+  color: #7a2a2a;
+  margin: 10px 0 0;
+}
+
+#impressao { display: none; }
+
+@media print {
+  body > *:not(#impressao) { display: none !important; }
+  #impressao { display: block !important; }
+  #impressao .pagina {
+    page-break-after: always;
+    break-after: page;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #impressao img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+}
