@@ -24,6 +24,14 @@
   var K = 4;           // pixels por milímetro para PNG e impressão (~100 dpi)
   var K_PREVIEW = 1.6; // pixels por milímetro na visualização
 
+  var CHAVE_TEMAS = 'gc_temas';
+  var FORMATO_MODELO = 'gerador-cartazes-modelo';
+  var CHAVES_COR = [
+    ['fundo', 'Fundo'], ['cabeca', 'Cabeçalho'], ['textoCabeca', 'Texto do cabeçalho'],
+    ['faixa', 'Faixa do preço'], ['preco', 'Preço'], ['cartao', 'Cartão'],
+    ['textoProduto', 'Texto do produto'], ['borda', 'Borda']
+  ];
+
   // ---------- Estado ----------
   var estado = {
     produtos: [],        // { nome, valor, unidade, preco }
@@ -33,7 +41,9 @@
     tema: 0,
     tamanho: 0,
     dividir: true,
-    orient: 0
+    orient: 0,
+    temasPersonalizados: [],
+    editandoIndice: -1
   };
 
   var el = {};
@@ -60,15 +70,30 @@
     el.imprimir = document.getElementById('imprimir');
     el.status = document.getElementById('status');
     el.impressao = document.getElementById('impressao');
+    el.editar = document.getElementById('editar-modelo');
+    el.excluir = document.getElementById('excluir-modelo');
+    el.baixarModelo = document.getElementById('baixar-modelo');
+    el.arquivoModelo = document.getElementById('arquivo-modelo');
+    el.editor = document.getElementById('editor');
+    el.editorNome = document.getElementById('editor-nome');
+    el.editorCores = document.getElementById('editor-cores');
+    el.editorRua = document.getElementById('editor-rua');
+    el.editorCancelar = document.getElementById('editor-cancelar');
+    el.urlModelo = document.getElementById('url-modelo');
+    el.baixarUrl = document.getElementById('baixar-url');
+    el.buscaModelo = document.getElementById('busca-modelo');
+    el.buscarModelo = document.getElementById('buscar-modelo');
+    el.resultadoBusca = document.getElementById('resultado-busca');
+    el.resultadosBusca = document.getElementById('resultados-busca');
     el.numeros = ['nomeX', 'nomeY', 'nomeW', 'nomeH', 'precoX', 'precoY', 'precoW', 'precoH']
       .map(function (id) { return document.getElementById(id); });
 
-    TEMAS.forEach(function (t, i) { el.tema.add(new Option(t.nome, String(i))); });
     TAMANHOS.forEach(function (t, i) { el.tamanho.add(new Option(t.nome + '  (' + t.w + ' x ' + t.h + ' mm)', String(i))); });
 
+    carregarTemas();
     carregarEstado();
     el.titulo.value = estado.titulo;
-    el.tema.value = String(estado.tema);
+    renderTemas();
     el.tamanho.value = String(estado.tamanho);
     el.orient.value = String(estado.orient);
     el.dividir.checked = estado.dividir;
@@ -87,6 +112,15 @@
     el.removerModelo.addEventListener('click', removerModelo);
     el.baixar.addEventListener('click', baixarPng);
     el.imprimir.addEventListener('click', imprimir);
+    el.editar.addEventListener('click', editarModelo);
+    el.excluir.addEventListener('click', excluirModelo);
+    el.baixarModelo.addEventListener('click', baixarModelo);
+    el.arquivoModelo.addEventListener('change', importarModelo);
+    el.editor.addEventListener('submit', salvarEditor);
+    el.editorCancelar.addEventListener('click', function () { el.editor.hidden = true; });
+    el.baixarUrl.addEventListener('click', carregarModeloDeUrl);
+    el.buscarModelo.addEventListener('click', buscarModelos);
+    el.buscaModelo.addEventListener('keydown', function (e) { if (e.key === 'Enter') buscarModelos(); });
 
     if (estado.modeloDataUrl) carregarModeloDeDataUrl(estado.modeloDataUrl);
     renderLista();
@@ -212,6 +246,277 @@
     estado.modeloDataUrl = null;
     el.nomeModelo.textContent = 'Nenhum modelo escolhido.';
     alterou();
+  }
+
+  // ---------- Modelo de imagem pela internet ----------
+  function carregarModeloDeUrl() {
+    var url = el.urlModelo.value.trim();
+    if (!/^https?:\/\//i.test(url)) {
+      mostrarStatus('Cole um link que comece com https://');
+      el.urlModelo.focus();
+      return;
+    }
+    var nome = url.split('?')[0].split('/').pop() || 'imagem da internet';
+    baixarImagemComoModelo(url, nome, function () { el.urlModelo.value = ''; });
+  }
+
+  // Baixa a imagem do endereço e a guarda como modelo (precisa de CORS para o canvas aceitar a imagem).
+  function baixarImagemComoModelo(url, nome, aoCarregar) {
+    mostrarStatus('Baixando a imagem...');
+    var img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function () {
+      var c = document.createElement('canvas');
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      c.getContext('2d').drawImage(img, 0, 0);
+      var tipo = /\.jpe?g(\?|$)/i.test(url) ? 'image/jpeg' : 'image/png';
+      var dataUrl;
+      try {
+        dataUrl = c.toDataURL(tipo, 0.92);
+      } catch (e) {
+        mostrarStatus('Esse site não deixa baixar a imagem. Salve-a no aparelho e use Escolher imagem.');
+        return;
+      }
+      if (aoCarregar) aoCarregar();
+      carregarModeloDeDataUrl(dataUrl, nome);
+    };
+    img.onerror = function () {
+      mostrarStatus('Não consegui baixar a imagem. Confira o endereço ou salve a imagem no aparelho.');
+    };
+    img.src = url;
+  }
+
+  // ---------- Modelos de cartaz (padrão e personalizados) ----------
+  function todosTemas() {
+    return TEMAS.concat(estado.temasPersonalizados);
+  }
+
+  function temaAtual() {
+    return todosTemas()[estado.tema] || TEMAS[0];
+  }
+
+  function temaValido(t) {
+    return !!t && typeof t.nome === 'string' && t.nome.trim() !== '' && CHAVES_COR.every(function (c) {
+      return /^#[0-9a-fA-F]{6}$/.test(t[c[0]]);
+    });
+  }
+
+  function copiarTema(t) {
+    var c = { nome: t.nome, rua: !!t.rua };
+    CHAVES_COR.forEach(function (k) { c[k[0]] = t[k[0]]; });
+    return c;
+  }
+
+  function renderTemas() {
+    el.tema.innerHTML = '';
+    todosTemas().forEach(function (t, i) { el.tema.add(new Option(t.nome, String(i))); });
+    if (estado.tema >= todosTemas().length) estado.tema = 0;
+    el.tema.value = String(estado.tema);
+  }
+
+  function carregarTemas() {
+    try {
+      var lidos = JSON.parse(localStorage.getItem(CHAVE_TEMAS) || '[]');
+      estado.temasPersonalizados = Array.isArray(lidos) ? lidos.filter(temaValido) : [];
+    } catch (e) {
+      estado.temasPersonalizados = [];
+    }
+  }
+
+  function salvarTemas() {
+    try {
+      localStorage.setItem(CHAVE_TEMAS, JSON.stringify(estado.temasPersonalizados));
+    } catch (e) {
+      mostrarStatus('Não consegui salvar o modelo neste aparelho.');
+    }
+  }
+
+  function abrirEditor(tema, indice) {
+    estado.editandoIndice = indice;
+    el.editorNome.value = tema.nome;
+    el.editorRua.checked = !!tema.rua;
+    el.editorCores.innerHTML = '';
+    CHAVES_COR.forEach(function (c) {
+      var label = document.createElement('label');
+      label.textContent = c[1];
+      var cor = document.createElement('input');
+      cor.type = 'color';
+      cor.value = tema[c[0]];
+      cor.dataset.chave = c[0];
+      label.appendChild(cor);
+      el.editorCores.appendChild(label);
+    });
+    el.editor.hidden = false;
+    el.editorNome.focus();
+  }
+
+  function editarModelo() {
+    var indice = estado.tema - TEMAS.length;
+    var base = temaAtual();
+    if (indice >= 0) {
+      abrirEditor(base, indice);
+      return;
+    }
+    var copia = copiarTema(base);
+    copia.nome = 'Cópia de ' + base.nome;
+    abrirEditor(copia, -1);
+  }
+
+  function salvarEditor(evento) {
+    evento.preventDefault();
+    var nome = el.editorNome.value.trim();
+    if (!nome) { mostrarStatus('Dê um nome ao modelo.'); el.editorNome.focus(); return; }
+    var tema = { nome: nome, rua: el.editorRua.checked };
+    el.editorCores.querySelectorAll('input[type="color"]').forEach(function (cor) {
+      tema[cor.dataset.chave] = cor.value;
+    });
+    if (estado.editandoIndice >= 0) {
+      estado.temasPersonalizados[estado.editandoIndice] = tema;
+      estado.tema = TEMAS.length + estado.editandoIndice;
+    } else {
+      estado.temasPersonalizados.push(tema);
+      estado.tema = todosTemas().length - 1;
+    }
+    salvarTemas();
+    el.editor.hidden = true;
+    renderTemas();
+    alterou();
+    mostrarStatus('Modelo "' + nome + '" salvo.');
+  }
+
+  function excluirModelo() {
+    var indice = estado.tema - TEMAS.length;
+    if (indice < 0) {
+      mostrarStatus('Modelos padrão não podem ser excluídos. Use Editar modelo para criar uma cópia.');
+      return;
+    }
+    if (!window.confirm('Excluir o modelo "' + temaAtual().nome + '"?')) return;
+    estado.temasPersonalizados.splice(indice, 1);
+    estado.tema = 0;
+    el.editor.hidden = true;
+    salvarTemas();
+    renderTemas();
+    alterou();
+  }
+
+  function baixarArquivo(texto, nome, tipo) {
+    var url = URL.createObjectURL(new Blob([texto], { type: tipo }));
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = nome;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  }
+
+  function baixarModelo() {
+    var tema = temaAtual();
+    var dados = { formato: FORMATO_MODELO, versao: 1, modelo: copiarTema(tema) };
+    baixarArquivo(JSON.stringify(dados, null, 2), 'modelo_' + tema.nome.replace(/[\\/:*?"<>|\s]+/g, '_') + '.json', 'application/json');
+  }
+
+  function importarModelo() {
+    var arq = el.arquivoModelo.files && el.arquivoModelo.files[0];
+    el.arquivoModelo.value = '';
+    if (!arq) return;
+    var leitor = new FileReader();
+    leitor.onload = function () {
+      var tema = null;
+      try {
+        var dados = JSON.parse(leitor.result);
+        tema = dados && dados.formato === FORMATO_MODELO ? dados.modelo : null;
+      } catch (e) {
+        tema = null;
+      }
+      if (!temaValido(tema)) { mostrarStatus('Arquivo de modelo inválido.'); return; }
+      estado.temasPersonalizados.push(copiarTema(tema));
+      estado.tema = todosTemas().length - 1;
+      salvarTemas();
+      renderTemas();
+      alterou();
+      mostrarStatus('Modelo "' + tema.nome + '" importado.');
+    };
+    leitor.onerror = function () { mostrarStatus('Não consegui ler esse arquivo.'); };
+    leitor.readAsText(arq);
+  }
+
+  // ---------- Busca de modelos com licença livre (Wikimedia Commons) ----------
+  var API_COMMONS = 'https://commons.wikimedia.org/w/api.php';
+  // Aceita CC0, domínio público, CC BY e CC BY-SA. Recusa NC (uso não comercial) e ND (sem edição).
+  var LICENCA_LIVRE = /^(CC0|Public domain|CC BY)/i;
+  var LICENCA_RESTRITA = /-(NC|ND)\b/i;
+
+  function metadado(info, chave) {
+    var m = info.extmetadata && info.extmetadata[chave];
+    if (!m || !m.value) return '';
+    return new DOMParser().parseFromString(m.value, 'text/html').body.textContent.trim();
+  }
+
+  function buscarModelos() {
+    var termo = el.buscaModelo.value.trim();
+    if (!termo) {
+      el.resultadoBusca.textContent = 'Digite o que você procura.';
+      el.buscaModelo.focus();
+      return;
+    }
+    el.resultadoBusca.textContent = 'Buscando...';
+    el.resultadosBusca.innerHTML = '';
+    var url = API_COMMONS + '?action=query&generator=search&gsrnamespace=6&gsrlimit=30' +
+      '&gsrsearch=' + encodeURIComponent(termo + ' filetype:bitmap') +
+      '&prop=imageinfo&iiprop=url|mime|extmetadata&iiurlwidth=600' +
+      '&iiextmetadatafilter=LicenseShortName|Artist&format=json&origin=*';
+    fetch(url)
+      .then(function (r) {
+        if (!r.ok) throw new Error('http ' + r.status);
+        return r.json();
+      })
+      .then(function (dados) {
+        var paginas = (dados.query && dados.query.pages) || {};
+        var itens = Object.keys(paginas).map(function (k) {
+          var p = paginas[k];
+          var info = p.imageinfo && p.imageinfo[0];
+          if (!info || !info.thumburl) return null;
+          var licenca = metadado(info, 'LicenseShortName');
+          if (!LICENCA_LIVRE.test(licenca) || LICENCA_RESTRITA.test(licenca)) return null;
+          return {
+            titulo: p.title.replace(/^(Arquivo|File):/, ''),
+            autor: metadado(info, 'Artist'),
+            licenca: licenca,
+            miniatura: info.thumburl,
+            // Troca a largura da miniatura por 1600 px para o modelo ficar nítido.
+            grande: info.thumburl.replace(/\/\d+px-/, '/1600px-')
+          };
+        }).filter(Boolean);
+        if (!itens.length) {
+          el.resultadoBusca.textContent = 'Nenhuma imagem com licença livre para esse termo. Tente outra palavra.';
+          return;
+        }
+        el.resultadoBusca.textContent = itens.length + ' imagem(ns) com licença livre. Toque em uma para usar como modelo.';
+        itens.forEach(function (item) {
+          var botao = document.createElement('button');
+          botao.type = 'button';
+          var img = document.createElement('img');
+          img.src = item.miniatura;
+          img.alt = item.titulo;
+          img.loading = 'lazy';
+          var legenda = document.createElement('span');
+          legenda.textContent = item.licenca + (item.autor ? ' · ' + item.autor : '');
+          botao.appendChild(img);
+          botao.appendChild(legenda);
+          botao.addEventListener('click', function () { usarImagemLivre(item); });
+          el.resultadosBusca.appendChild(botao);
+        });
+      })
+      .catch(function () {
+        el.resultadoBusca.textContent = 'Não consegui buscar agora. Verifique a internet e tente de novo.';
+      });
+  }
+
+  function usarImagemLivre(item) {
+    var nome = item.titulo + ' (' + item.licenca + (item.autor ? ', ' + item.autor : '') + ', Wikimedia Commons)';
+    baixarImagemComoModelo(item.grande, nome);
   }
 
   // ---------- Regras de folhas (igual ao PC) ----------
@@ -363,7 +668,7 @@
   // Monta as páginas a serem vistas, baixadas ou impressas.
   // Cada página: { canvas, paisagem, rotulo }.
   function montarPaginas(k) {
-    var tema = TEMAS[estado.tema];
+    var tema = temaAtual();
     var tam = TAMANHOS[estado.tamanho];
     var modelo = estado.modelo;
     var paginas = [];
@@ -461,7 +766,7 @@
     if (!estado.modelo && estado.dividir) {
       var plano = calcularFolhas(TAMANHOS[estado.tamanho], true, estado.orient);
       var inteiro = criarCanvas(plano.canvasW, plano.canvasH, K_PREVIEW);
-      desenharCartaz(inteiro.ctx, plano.canvasW, plano.canvasH, TEMAS[estado.tema], estado.titulo, estado.produtos, null, null);
+      desenharCartaz(inteiro.ctx, plano.canvasW, plano.canvasH, temaAtual(), estado.titulo, estado.produtos, null, null);
       desenharGrade(inteiro.canvas, plano, K_PREVIEW);
       inteiro.canvas.style.width = '100%';
       el.visualizacao.appendChild(inteiro.canvas);

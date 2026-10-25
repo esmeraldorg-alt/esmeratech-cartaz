@@ -65,6 +65,35 @@
   </section>
 
   <section class="bloco">
+    <h2>Modelos de cartaz</h2>
+    <p class="ajuda">Os modelos padrão não mudam. Para mudar as cores, toque em Editar modelo: se o modelo for padrão, ele é copiado.</p>
+    <div class="linha-botoes">
+      <button id="editar-modelo" type="button" class="botao azul">Editar modelo</button>
+      <button id="excluir-modelo" type="button" class="botao cinza pequeno">Excluir</button>
+    </div>
+    <div class="linha-botoes">
+      <button id="baixar-modelo" type="button" class="botao cinza">Baixar modelo (.json)</button>
+      <label class="botao cinza arquivo">Importar modelo (.json)
+        <input id="arquivo-modelo" type="file" accept=".json,application/json">
+      </label>
+    </div>
+    <form id="editor" class="editor" autocomplete="off" hidden>
+      <label>Nome do modelo
+        <input id="editor-nome" type="text" maxlength="60">
+      </label>
+      <div id="editor-cores" class="grade-cores"></div>
+      <label class="marcar">
+        <input id="editor-rua" type="checkbox">
+        Cartaz de rua (tag no topo e preço embaixo)
+      </label>
+      <div class="linha-botoes">
+        <button id="editor-salvar" type="submit" class="botao verde">Salvar modelo</button>
+        <button id="editor-cancelar" type="button" class="botao cinza">Cancelar</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="bloco">
     <h2>3. Modelo de imagem (opcional)</h2>
     <p class="ajuda">Escolha uma imagem de modelo (PNG, JPG ou WebP). Ela vira o fundo do cartaz e o nome e o preço são colocados sobre ela.</p>
     <div class="linha-botoes">
@@ -74,6 +103,18 @@
       <button id="remover-modelo" type="button" class="botao cinza pequeno">Remover</button>
     </div>
     <p id="nome-modelo" class="ajuda">Nenhum modelo escolhido.</p>
+    <label>Ou cole o link de uma imagem da internet
+      <input id="url-modelo" type="url" placeholder="https://...">
+    </label>
+    <button id="baixar-url" type="button" class="botao azul">Baixar imagem do link</button>
+    <p class="ajuda">Se o site não deixar baixar a imagem, salve-a no aparelho e use Escolher imagem.</p>
+    <label>Buscar imagem com licença livre (Wikimedia Commons)
+      <input id="busca-modelo" type="search" maxlength="80" placeholder="Ex.: promoção, supermercado">
+    </label>
+    <button id="buscar-modelo" type="button" class="botao azul">Buscar</button>
+    <p id="resultado-busca" class="ajuda"></p>
+    <div id="resultados-busca" class="grade-busca"></div>
+    <p class="ajuda">Só aparecem imagens que você pode usar e editar. Quando a licença pedir, dê crédito ao autor ao usar o cartaz.</p>
 
     <div id="textos-modelo" class="textos-modelo" hidden>
       <p class="ajuda">Posição em % do modelo: X e Y são onde o texto começa; largura e altura são o tamanho da área.</p>
