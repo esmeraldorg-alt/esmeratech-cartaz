@@ -1,13 +1,13 @@
 {
-  "name": "Gerador de Cartazes",
-  "short_name": "Cartazes",
-  "description": "Cartazes de oferta com lista de produtos, modelos e impressão em folhas A4.",
+  "name": "ESMERATECH Editor de Cartaz",
+  "short_name": "ESMERATECH",
+  "description": "Editor de cartazes de oferta com lista de produtos, modelos e impressão em folhas A4.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f5f6f8",
-  "theme_color": "#d6141e",
+  "background_color": "#141422",
+  "theme_color": "#141422",
   "lang": "pt-BR",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

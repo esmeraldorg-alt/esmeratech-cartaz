@@ -1,5 +1,5 @@
 // Service worker: deixa o app abrir mesmo sem internet, depois da primeira vez.
-const CACHE = 'gerador-cartazes-v1';
+const CACHE = 'esmeratech-cartaz-v2';
 const ARQUIVOS = [
   './',
   './index.html',
